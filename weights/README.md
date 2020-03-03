@@ -1,3 +1,5 @@
 Download weights
 
-wget https://drive.google.com/file/d/1ZPu1YR2UzGHQD0o1rEqy-j5bmEm3lbyP/view?usp=sharing
+Copy YOLACT weight from the YOLACT github:
+
+https://drive.google.com/file/d/1yp7ZbbDwvMiFJEq4ptVKTYTI2VeRDXl0/view?usp=sharing

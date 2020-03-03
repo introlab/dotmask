@@ -18,7 +18,7 @@ from scipy import ndimage
 import copy
 
 
-# Yoloact
+# Yoloact imports
 sys.path.append('../nn/yolact/')
 
 from utils.augmentations import BaseTransform, FastBaseTransform, Resize
@@ -26,7 +26,6 @@ from yolact import Yolact
 from data import COCODetection, get_label_map, MEANS, COLORS
 from layers.output_utils import postprocess
 from data import cfg, set_cfg, set_dataset
-
 import torch
 import torch.backends.cudnn as cudnn
 
@@ -42,6 +41,26 @@ from kalmanFilter import extendedKalmanFilter
 
 # Root directory of the project
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+'''Uncomment for mask rcnn
+ # Keras
+import keras
+from keras.models import Model
+from keras import backend as K
+K.common.set_image_dim_ordering('tf')
+
+# Mask-RCNN
+sys.path.append('../nn/Mask_RCNN/')
+from mrcnn import config
+from mrcnn import utils 
+from mrcnn import model as modellib
+
+class InferenceConfig(config.Config):
+    NAME = "ISM mrcnn"
+    GPU_COUNT = 1
+    IMAGES_PER_GPU = 1
+    NUM_CLASSES = 1 + 80
+'''
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(
@@ -76,29 +95,17 @@ def add_padding(img, pad_l, pad_t, pad_r, pad_b):
 
     return img
 
+class DOTMask():
 
-
-'''
-class InferenceConfig(config.Config):
-    NAME = "ISM mrcnn"
-    GPU_COUNT = 1
-    IMAGES_PER_GPU = 1
-    NUM_CLASSES = 1 + 80
-'''
-class ISMVSlam():
-
-    def __init__(self, nn):
+    def __init__(self, nn, input_device):
         """
         Initialisation function
         """
-        #self.config = InferenceConfig()
-        #self.config.display()
-
+    
         print('Loading model...')
         self.nn = nn
         if self.nn == 'yolact':
             print("Selected NN: Yolact")
-
             set_cfg("yolact_resnet50_config")
             #set_cfg("yolact_resnet50_config")
             cfg.eval_mask_branch = True
@@ -114,19 +121,6 @@ class ISMVSlam():
 
         elif self.nn == 'mrcnn':
             print("Selected NN: Mask-RCNN")
-
-            # Keras
-            import keras
-            from keras.models import Model
-            from keras import backend as K
-            K.common.set_image_dim_ordering('tf')
-
-            # Mask-RCNN
-            sys.path.append('../nn/Mask_RCNN/')
-            from mrcnn import config
-            from mrcnn import utils 
-            from mrcnn import model as modellib
-
             self.config = InferenceConfig()
             self.model = modellib.MaskRCNN(
                 mode="inference", 
@@ -147,7 +141,7 @@ class ISMVSlam():
         self.cam_pos_qat = np.array([[0.,0.,0.],[0.,0.,0.,1.]])
         self.cam_pos = np.array([[0.,0.,0.],[0.,0.,0.]])
         
-        self.dilatation = 30
+        self.dilatation = 1
         self.score_threshold = 0.1
         self.max_number_observation = 5
         self.human_threshold = 0.01
@@ -155,6 +149,10 @@ class ISMVSlam():
         self.iou_threshold = 0.9
         self.selected_classes = [0, 56, 67]
         self.masked_id = []
+
+        #if input_device == 'xtion':
+        #    self.human_threshold = 0.1
+        #    self.iou_threshold = 0.3
 
         self.depth_image_pub = rospy.Publisher(
             "/camera/depth_registered/masked_image_raw", 
@@ -224,12 +222,10 @@ class ISMVSlam():
                 if not np.in1d(i, self.masked_id):
                     if self.objects_dict[i]["activeObject"] == 1 and self.objects_dict[i]["maskID"] < masks.shape[0] and (class_ids[self.objects_dict[i]["maskID"]] == 0 or class_ids[self.objects_dict[i]["maskID"]] == 39 or 
                         class_ids[self.objects_dict[i]["maskID"]] == 56):
-                        #print("masking")
                         x[self.objects_dict[i]["maskID"], :, :] = masks[self.objects_dict[i]["maskID"], :, :]
                         
                     elif self.objects_dict[i]["activeObject"] == 0 and self.objects_dict[i]["maskID"] < masks.shape[0]:
                         x[self.objects_dict[i]["maskID"], :, :] = 0
-                        #print("not masking")
                     else:
                         pass
                     self.masked_id.append(i)
@@ -251,24 +247,14 @@ class ISMVSlam():
             else:
                 object_type = "Nan"
 
-            if self.objects_dict[i]["activeObject"] ==1:
-                object_state = "Static"
-            elif self.objects_dict[i]["activeObject"] ==0:
-                object_state = "Dynamic"
-            else:
-                object_state = "Nan"
-
             try:
                 (self.objects_dict[i]["worldPose"],rot) = listener.lookupTransform('/map',object_type+'_'+str(i), rospy.Time(0))
             except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
                 continue
                         
     def handle_objects_pose(self):
-        #print("Sending thing try")
         for i in self.objects_dict:
-            #print("Sending thing object in dict")
             if self.objects_dict[i]["classID"]==0 or self.objects_dict[i]["classID"]==39 or self.objects_dict[i]["classID"]==56:
-                #print("Sending thing object is right class")
                 if self.objects_dict[i]["classID"]==0:
                     object_type = "Person"
                 elif self.objects_dict[i]["classID"]==39:
@@ -277,21 +263,12 @@ class ISMVSlam():
                     object_type = "Chair"
                 else:
                     object_type = "Nan"
-
-                if self.objects_dict[i]["activeObject"] ==1:
-                    object_state = "Static"
-                elif self.objects_dict[i]["activeObject"] ==0:
-                    object_state = "Dynamic"
-                else:
-                    object_state = "Nan"
                 
                 br = tf.TransformBroadcaster()
                 e_pose = self.objects_dict[i]["estimatedPose"]
-                #(e_pose[1], -e_pose[2], -e_pose[0])
                 br.sendTransform((e_pose[0], e_pose[1], e_pose[2]), 
                                 tf.transformations.quaternion_from_euler(0,0,0),
                                 rospy.Time.now(),
-                                #object_type+'_'+object_state+'_'+str(i),
                                 object_type+'_'+str(i),
                                 '/map')
 
@@ -314,19 +291,6 @@ class ISMVSlam():
         centered_mask_old_croped = centered_mask_old[1:478, 1:638]
         centered_mask_new_croped = centered_mask_new[1:478, 1:638]
 
-        '''
-        extent = np.min(0), np.max(640), np.min(0), np.max(480)
-        fig = plt.figure(frameon=False)
-
-        im1 = plt.imshow(centered_mask_old_croped, cmap=plt.cm.gray, interpolation='nearest',
-                        extent=extent)
-
-        im2 = plt.imshow(centered_mask_new_croped, cmap=plt.cm.viridis, alpha=.9, interpolation='bilinear',
-                        extent=extent)
-
-        plt.show()
-        '''
-
         intersection = np.logical_and(centered_mask_old_croped, centered_mask_new_croped)
         union = np.logical_or(centered_mask_old_croped, centered_mask_new_croped)
         iou = np.sum(intersection) / np.sum(union)
@@ -340,8 +304,9 @@ class ISMVSlam():
         image_static = copy.deepcopy(image_in)
         for i in range(masks.shape[0]):
             is_active = self.get_active(i)
-            if is_active == 0:
-                mask = masks[i, :, :]
+            mask = masks[i, :, :]
+            mask = ndimage.binary_dilation(mask, iterations=self.dilatation)
+            if is_active == 1:
                 image[:, :] = np.where(mask == 1,
                                     0,
                                     image[:, :])
@@ -349,10 +314,11 @@ class ISMVSlam():
                                     0,
                                     image[:, :])
             else:
-                mask = masks[i, :, :]
                 image[:, :] = np.where(mask == 1,
                                     0,
                                     image[:, :])
+
+            
         return image_static, image
 
     def mask_dilatation(self, masks):
@@ -452,9 +418,6 @@ class ISMVSlam():
                       [ 0,  0.8,  0],
                       [ 0,  0,  1.2]])
 
-
-
-
         self.objects_dict.update({self.next_object_id : {
             "kalmanFilter" : extendedKalmanFilter(x, P, F, H, Q, R),
             "centroid" : centroid,
@@ -505,7 +468,6 @@ class ISMVSlam():
                 z = 0
             else :
                 z = mask_depth[i]
-
             
             y = (((rois[i,3]+rois[i,1])/2) - cy) * z / fy
             x = (((rois[i,2]+rois[i,0])/2) - cx) * z / fx
@@ -550,8 +512,6 @@ class ISMVSlam():
                 nn_start_time = time.time()
                 
                 if self.nn == 'yolact':
-                    # Yolact
-
                     frame = torch.from_numpy(current_frame).cuda().float()
                     batch = FastBaseTransform()(frame.unsqueeze(0))
                     preds = self.net(batch.cuda())
@@ -564,9 +524,7 @@ class ISMVSlam():
                     r['class_ids'] = copy.deepcopy(b['class_ids'].cpu().data.numpy())
                     r['scores'] = copy.deepcopy(b['scores'].cpu().data.numpy())
                     r['rois'] = copy.deepcopy(b['rois'].cpu().data.numpy())
-                    r['masks'] = copy.deepcopy(b['masks'].cpu().data.numpy())
-
-                    
+                    r['masks'] = copy.deepcopy(b['masks'].cpu().data.numpy())    
                
                 elif self.nn == 'mrcnn':
                     results = self.model.detect([current_frame],verbose=1)
@@ -578,7 +536,8 @@ class ISMVSlam():
                         buff = r['rois'][i]
                         r['rois'][i] = [buff[1],buff[0],buff[3],buff[2]]
                     r['class_ids'] = r['class_ids'] - 1
-                '''
+                
+                ''' Deprecated, did not enhance speed
                 j=0
                 for i in range(len(r['class_ids'])):
                     if not np.in1d(r['class_ids'][j], self.selected_classes):
@@ -621,9 +580,9 @@ class ISMVSlam():
                 h_mat[0:3,3:] = np.array([transc]).T
 
                 objects_to_delete = []
+
                 # Main filter update and prediction step
                 if len(r['rois']) == 0:
-                    #print("No object detected")
                     for i in self.objects_dict:
                         self.objects_dict[i]["inactiveNbFrame"] = self.objects_dict[i]["inactiveNbFrame"] + 1
 
@@ -634,18 +593,14 @@ class ISMVSlam():
                         self.delete_object(i)
                         
                 else : 
-                    #print("Object detected")
                     current_centroids, current_dimensions = self.mask_to_centroid(r['rois'],mask_depth)
 
                     if not self.objects_dict:
-                        #print("No object")
                         if not len(current_centroids)==0:
                             for i in range(len(current_centroids)):
-                                #print("Kalman initialisation")
                                 self.add_object(current_centroids[i], current_dimensions[i], i, r['class_ids'][i], r['masks'][i], r['rois'][i])
 
                             for i in self.objects_dict:
-                                #print("Kalman prediction and update")
                                 self.objects_dict[i]["kalmanFilter"].prediction()
                                 self.objects_dict[i]["kalmanFilter"].update(self.objects_dict[i]["centroid"], h_mat)
                                 self.objects_dict[i]["estimatedPose"] = self.objects_dict[i]["kalmanFilter"].x[0:3]
@@ -655,7 +610,6 @@ class ISMVSlam():
                         objects_ids = np.zeros((len(self.objects_dict)))
                         index = 0
                         for i in self.objects_dict:
-                            #print("Object with ID : ", objects_ids[index], " is at estimated pose")
                             objects_pose[index,] = self.objects_dict[i]["centroid"]
                             objects_ids[index] = i
                             index = index + 1
@@ -665,7 +619,6 @@ class ISMVSlam():
                             centroids_pose[i,] = current_centroids[i]
                         
                         eucledian_dist_pairwise = np.array(cdist(objects_pose, centroids_pose)).flatten()
-                        #print(eucledian_dist_pairwise)
                         index_sorted = np.argsort(eucledian_dist_pairwise)
 
                         used_objects = []
@@ -674,49 +627,35 @@ class ISMVSlam():
                         for index in range(len(eucledian_dist_pairwise)):
                             object_id = int(index_sorted[index] / len(centroids_pose))
                             centroid_id = index_sorted[index] % len(centroids_pose)
-                            #print("Looking for closest neighbor")
+
                             if not np.in1d(object_id, used_objects) and not np.in1d(centroid_id, used_centroids):# and (eucledian_dist_pairwise[index]<0.5):
                                 if self.objects_dict[objects_ids[object_id]]["classID"] == r['class_ids'][centroid_id]:
                                     timebefore = time.time()
                                     used_objects.append(object_id)
                                     used_centroids.append(centroid_id)
-                                    
-                                    #print("Kalman prediction and update")
+
                                     self.objects_dict[objects_ids[object_id]]["kalmanFilter"].prediction()
                                     self.objects_dict[objects_ids[object_id]]["kalmanFilter"].update(current_centroids[centroid_id], h_mat)
                                     self.objects_dict[objects_ids[object_id]]["estimatedPose"] = self.objects_dict[objects_ids[object_id]]["kalmanFilter"].x[0:3]
                                     self.objects_dict[objects_ids[object_id]]["estimatedVelocity"] = self.objects_dict[objects_ids[object_id]]["kalmanFilter"].x[3:6]
 
-                                   
-                                    #xtion value = 0.5
-                                    #Tum walking xyz 0.054 ate 0.001
                                     if self.objects_dict[objects_ids[object_id]]["classID"] == 0:
                                         max_threshold = self.human_threshold
                                     else:
                                         max_threshold = self.object_threshold
                                     
-                                    #print(self.objects_dict[objects_ids[object_id]]["classID"])
                                     if abs(self.objects_dict[objects_ids[object_id]]["estimatedVelocity"][0])>max_threshold or abs(self.objects_dict[objects_ids[object_id]]["estimatedVelocity"][1])>max_threshold or abs(self.objects_dict[objects_ids[object_id]]["estimatedVelocity"][2])>max_threshold:
-                                        #print("Active velocity : ", self.objects_dict[objects_ids[object_id]]["estimatedVelocity"], "Threshold is :", max_threshold)
-                                        #print(self.objects_dict[objects_ids[object_id]]["estimatedVelocity"])
                                         self.objects_dict[objects_ids[object_id]]["activeObject"] = 1
                                     else:
-                                        #print("Inactive velocity", self.objects_dict[objects_ids[object_id]]["estimatedVelocity"])
                                         self.objects_dict[objects_ids[object_id]]["activeObject"] = 0
-                                    
-                                    
+
                                     if self.objects_dict[objects_ids[object_id]]["classID"] == 0 and self.objects_dict[objects_ids[object_id]]["activeObject"] == 0:
-                                        #timebefore2 = time.time()
-                                        iou = self.iou_centered_centroid(self.objects_dict[objects_ids[object_id]]["roisOld"], r['rois'][centroid_id], self.objects_dict[objects_ids[object_id]]["maskOld"],r['masks'][centroid_id])
-                                        #print("IUOU time : ", - (timebefore2 - time.time()))
-            
+                                        
+                                        iou = self.iou_centered_centroid(self.objects_dict[objects_ids[object_id]]["roisOld"], r['rois'][centroid_id], self.objects_dict[objects_ids[object_id]]["maskOld"],r['masks'][centroid_id])         
                                         if iou<self.iou_threshold:
-                                            #print("Active human IOU")
-                                            #print(iou)
                                             self.objects_dict[objects_ids[object_id]]["activeObject"] = 1
                                         else:
                                             x=1
-                                            #print("Inactive human IOU")
                                     
                                     self.objects_dict[objects_ids[object_id]]["centroid"] = centroids_pose[centroid_id]
                                     self.objects_dict[objects_ids[object_id]]["dimensions"] = current_dimensions[centroid_id]
@@ -724,7 +663,6 @@ class ISMVSlam():
                                     self.objects_dict[objects_ids[object_id]]["maskID"] = centroid_id
                                     self.objects_dict[objects_ids[object_id]]["maskOld"] = r['masks'][centroid_id]
                                     self.objects_dict[objects_ids[object_id]]["roisOld"] = r['rois'][centroid_id]
-                                    print("Kalman update centroid time : ", - (timebefore - time.time())) 
                         
                         if len(centroids_pose) < len(objects_pose):
                             for index in range(len(eucledian_dist_pairwise)):
@@ -754,30 +692,14 @@ class ISMVSlam():
                                
                 kalman_time = time.time()
                 # Write objects filter pose to tf
-                timebefore = time.time()
                 self.handle_objects_pose()
-                print("Handle pose time : ", - (timebefore - time.time()))
-
-                timebefore = time.time()
-                #static_masks = self.static_masks_selection(r['masks'], r['class_ids'])
-                print("static_masks_selection time : ", - (timebefore - time.time()))
-                #dilated_static_masks = self.mask_dilatation(static_masks)
-                #dilated_static_masks = self.mask_dilatation_cv(static_masks)
-                timebefore = time.time()
 
                 result_dynamic_depth_image, result_depth_image = self.apply_depth_image_masking(current_depth_frame, r['masks'])
-                print("Apply depth time : ", - (timebefore - time.time()))
-
+                
                 DDITS = Image()
                 DDITS = self.bridge.cv2_to_imgmsg(result_dynamic_depth_image,'32FC1')
                 DDITS.header = self.depth_msg_header
                 self.dynamic_depth_image_pub.publish(DDITS)
-
-                selected_class = self.class_selection(r['masks'], r['class_ids'])
-
-                #dilated_selected_masks = self.mask_dilatation(selected_class)
-
-                #result_depth_image = self.apply_depth_image_masking(result_dynamic_depth_image, selected_class)
 
                 DITS = Image()
                 DITS = self.bridge.cv2_to_imgmsg(result_depth_image,'32FC1')
@@ -790,14 +712,10 @@ class ISMVSlam():
                 ", Print time: ", format(print_time - kalman_time, '.3f'), ", Total time: ", format(time.time() - start_time, '.3f'),
                 ", FPS :", format(1/(time.time() - start_time), '.2f'), end="\r")
 
-                #print("FPS : ", format(1/(time.time() - start_time), '.2f'), end="\r")
-
-
     def image_callback(self, msg):
 
         self.msg_header = msg.header
         self.frame = self.bridge.imgmsg_to_cv2(msg, "bgr8")
-        #self.live_analysis(self.frame)
 
     def depth_image_callback(self, msg):
 
@@ -811,38 +729,37 @@ if __name__ == '__main__':
     #arg = sys.argv
     parse_args()
 
-    ismvs = ISMVSlam(args.nn)
+    dotmask = DOTMask(args.nn, args.input)
     rospy.init_node('ism_node', anonymous=True)
 
     listener = tf.TransformListener()
 
     if args.input=='tum':
         print("Running on tum dataset")
-        #ismvs.tf_camera = '/openni_rgb_optical_frame'
-        ismvs.tf_camera = '/openni_rgb_optical_frame'
-        rospy.Subscriber("/camera/rgb/image_color", Image, ismvs.image_callback)
+        dotmask.tf_camera = '/openni_rgb_optical_frame'
+        rospy.Subscriber("/camera/rgb/image_color", Image, dotmask.image_callback)
         rospy.Subscriber("/camera/depth/image", 
-                    Image, ismvs.depth_image_callback)
+                    Image, dotmask.depth_image_callback)
     elif args.input=='xtion':
         print("Running on asus xtion")
-        ismvs.tf_camera = '/camera_rgb_optical_frame'
-        rospy.Subscriber("/camera/rgb/image_rect_color", Image, ismvs.image_callback)
+        dotmask.tf_camera = '/camera_rgb_optical_frame'
+        rospy.Subscriber("/camera/rgb/image_rect_color", Image, dotmask.image_callback)
         rospy.Subscriber("/camera/depth_registered/image_raw", 
-                    Image, ismvs.depth_image_callback)
+                    Image, dotmask.depth_image_callback)
     elif args.input=='zed':
         print("Running on xamera zed")
-        ismvs.tf_camera = '/zed_left_camera_optical_frame'
-        rospy.Subscriber("/zed/zed_node/rgb/image_rect_color", Image, ismvs.image_callback)
+        dotmask.tf_camera = '/zed_left_camera_optical_frame'
+        rospy.Subscriber("/zed/zed_node/rgb/image_rect_color", Image, dotmask.image_callback)
         rospy.Subscriber("/zed/zed_node/depth/depth_registered", 
-                    Image, ismvs.depth_image_callback)
+                    Image, dotmask.depth_image_callback)
     else:
         print("No input selected")
 
     if args.nn == "yolact":  
         with torch.no_grad():
-            ismvs.live_analysis()
+            dotmask.live_analysis()
     elif args.nn == "mrcnn":
-        ismvs.live_analysis()
+        dotmask.live_analysis()
     try:
         rospy.spin()
     except rospy.ROSInterruptException:

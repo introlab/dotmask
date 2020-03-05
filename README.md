@@ -4,7 +4,7 @@
 
 ## Requirements
 
-Python 3.6.9 (& 2.7), Cuda 10.2, PyTorch, ROS Melodic, RTAB-Map, Python3 environment
+Python 3.6.9 (& 2.7), Cuda 10.2, PyTorch, ROS Melodic, RTAB-Map
 
 *For better performances,install RTAB-Map with recomended/optional dependencies*
 

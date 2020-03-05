@@ -38,10 +38,10 @@ Python 3.6.9 (& 2.7), Cuda 10.2, PyTorch, ROS Melodic, RTAB-Map, Python3 environ
     source devel.setup.bash
     ```
 3. Clone the repo
-  ```bash
-  cd catkin_ws_py3/src
-  git clone https://github.com/introlab/dotmask.git
-  cd ..
-  catkin_make --cmake-args -DCMAKE_BUILD_TYPE=Release -DPYTHON_EXECUTABLE=/usr/bin/python3  -DPYTHON_INCLUDE_DIR=/usr/include/python3.6m -DPYTHON_LIBRARY=/usr/lib/x86_64-linux-gnu/libpython3.6m.so 
-    source devel.setup.bash
-  ```
+    ```bash
+    cd catkin_ws_py3/src
+    git clone https://github.com/introlab/dotmask.git
+    cd ..
+    catkin_make --cmake-args -DCMAKE_BUILD_TYPE=Release -DPYTHON_EXECUTABLE=/usr/bin/python3  -DPYTHON_INCLUDE_DIR=/usr/include/python3.6m -DPYTHON_LIBRARY=/usr/lib/x86_64-linux-gnu/libpython3.6m.so 
+      source devel.setup.bash
+    ```

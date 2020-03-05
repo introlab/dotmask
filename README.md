@@ -12,11 +12,12 @@ Python 3.6.9 (& 2.7), Cuda 10.2, PyTorch, ROS Melodic, RTAB-Map
 
 1. Project dependencies
 
-  ```bash
-  sudo apt-get install python3-pip python3-yaml python3-catkin-pkg-modules python3-rospkg-modules python3-empy
-  pip3 install torch torchvision cython
-  pip3 install opencv-python pillow pycocotools matplotlib scikit-learn rospkg catkin_pkg
-  ```
+    ```bash
+    sudo apt-get install python3-pip python3-yaml python3-catkin-pkg-modules python3-rospkg-modules python3-empy
+    pip3 install torch torchvision cython
+    pip3 install opencv-python pillow pycocotools matplotlib scikit-learn rospkg catkin_pkg
+    ```
+    
 2. Necesseray tricks to use python3 with ros
 
   * This project is based on python3, however ROS has not changed to python3. When the next ROS distribution will be out on python3, this sequence will become obsolete.
@@ -38,6 +39,7 @@ Python 3.6.9 (& 2.7), Cuda 10.2, PyTorch, ROS Melodic, RTAB-Map
     source devel.setup.bash
     ```
 3. Clone the repo
+
     ```bash
     cd catkin_ws_py3/src
     git clone https://github.com/introlab/dotmask.git

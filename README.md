@@ -28,6 +28,7 @@ Python 3.6.9 (& 2.7), Cuda 10.2, PyTorch, ROS Melodic, RTAB-Map
     mkdir catkin_ws_py3
     cd catkin_ws_py3
     mkdir src
+    cd src
     catkin_init_ws
     cd ..
     wstool init 

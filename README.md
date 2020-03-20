@@ -49,3 +49,52 @@ Python 3.6.9 (& 2.7), Cuda 10.2, PyTorch, ROS Melodic, RTAB-Map
     catkin_make --cmake-args -DCMAKE_BUILD_TYPE=Release -DPYTHON_EXECUTABLE=/usr/bin/python3  -DPYTHON_INCLUDE_DIR=/usr/include/python3.6m -DPYTHON_LIBRARY=/usr/lib/x86_64-linux-gnu/libpython3.6m.so 
     source devel/setup.bash
     ```
+
+## Benchmarking on TUM
+
+1. Start RTABMap-ros
+    ```bash
+    roslaunch dotmask dotmask-tum.launch
+    ```
+
+2. Start DOTMask
+    ```bash
+    source ~/catkin_ws_py3/devel/setup.bash
+    cd ~/catkin_ws_py3/src/dotmask/src
+    python3 dotmask_node.py --nn=yolact --input=tum
+    ```
+    
+3. Start a TUM rosbag
+    * To run the rosbag with rtabmap, make sure to do the following steps for the desired sequence. 
+    ```bash
+    wget http://vision.in.tum.de/rgbd/dataset/freiburg3/rgbd_dataset_freiburg3_walking_static.bag
+    rosbag decompress rgbd_dataset_freiburg3_walking_static.bag
+    wget https://gist.githubusercontent.com/matlabbe/897b775c38836ed8069a1397485ab024/raw/6287ce3def8231945326efead0c8a7730bf6a3d5/tum_rename_world_kinect_frame.py
+    python tum_rename_world_kinect_frame.py rgbd_dataset_freiburg3_walking_static.bag
+    ```
+    
+    * Run the rosbag
+    ```bash
+    rosbag play --clock rgbd_dataset_freiburg3_walking_static.bag -r 0.1
+    ```
+
+
+## Run DOTMask on xtion
+    * Opeeni2 is required to run the camera, install ros-melodic-openni2-launch with apt
+
+1. Start RTABMap-ros
+    ```bash
+    roslaunch dotmask dotmask-xtion.launch
+    ```
+    
+2. Start the xtion
+    ```bash
+    roslaunch openni2_launch openni2.launch depth_registration:=true
+    ```
+
+3. Start DOTMask
+    ```bash
+    source ~/catkin_ws_py3/devel/setup.bash
+    cd ~/catkin_ws_py3/src/dotmask/src
+    python3 dotmask_node.py --nn=yolact --input=xtion
+    ```

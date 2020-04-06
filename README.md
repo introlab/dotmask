@@ -29,7 +29,7 @@ Python 3.6.9 (& 2.7), Cuda 10.2, PyTorch, ROS Melodic, RTAB-Map
     cd catkin_ws_py3
     mkdir src
     cd src
-    catkin_init_ws
+    catkin_init_workspace
     cd ..
     wstool init 
     wstool set -y src/geometry2 --git https://github.com/ros/geometry2 -v 0.6.5 

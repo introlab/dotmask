@@ -6,7 +6,10 @@
 
 Python 3.6.9 (& 2.7), Cuda 10.2, PyTorch, ROS Melodic, RTAB-Map
 
+*For Mask R-CNN install TensorFlow 1.3 and Keras 2.0.8*
+
 *For better performances,install RTAB-Map with recomended/optional dependencies*
+
 
 ## Installation
 
@@ -20,10 +23,10 @@ Python 3.6.9 (& 2.7), Cuda 10.2, PyTorch, ROS Melodic, RTAB-Map
     
 2. Necesseray tricks to use python3 with ros
 
-  * This project is based on python3, however ROS has not changed to python3. When the next ROS distribution will be out on python3, this sequence will become obsolete.
-  
-  * Because of issues with python3 and ROS, the project uses a workspace dedicated to python3. 
-    
+    * This project is based on python3, however ROS has not changed to python3. When the next ROS distribution will be out on python3, this sequence will become obsolete.
+
+    * Because of issues with python3 and ROS, the project uses a workspace dedicated to python3. 
+
     ```bash
     mkdir catkin_ws_py3
     cd catkin_ws_py3
@@ -49,6 +52,35 @@ Python 3.6.9 (& 2.7), Cuda 10.2, PyTorch, ROS Melodic, RTAB-Map
     catkin_make --cmake-args -DCMAKE_BUILD_TYPE=Release -DPYTHON_EXECUTABLE=/usr/bin/python3  -DPYTHON_INCLUDE_DIR=/usr/include/python3.6m -DPYTHON_LIBRARY=/usr/lib/x86_64-linux-gnu/libpython3.6m.so 
     source devel/setup.bash
     ```
+    
+4. Download the NN
+    * You need to download the desired neural network from their original repo.
+
+    YOLACT and YOLACT++: 
+    ```bash
+    cd catkin_ws_py3/src/dotmask/nn
+    git clone https://github.com/dbolya/yolact.git
+    ```
+
+    Mask R-CNN: 
+    ```bash
+    cd catkin_ws_py3/src/dotmask/nn
+    git clone https://github.com/matterport/Mask_RCNN.git
+    ```
+
+4. Download the NN weigths
+
+    Download the weigths and place them in the "catkin_ws_py3/src/dotmask/weights" folder of this repo.
+    * Those links are from the orignal repos
+
+    YOLACT:
+    * https://drive.google.com/uc?id=1yp7ZbbDwvMiFJEq4ptVKTYTI2VeRDXl0&export=download 
+
+    YOLACT++:
+    * https://drive.google.com/uc?id=1ZPu1YR2UzGHQD0o1rEqy-j5bmEm3lbyP&export=download
+
+    Mask R-CNN:
+    * https://github.com/matterport/Mask_RCNN/releases/download/v2.1/mask_rcnn_balloon.h5 
 
 ## Benchmarking on TUM
 

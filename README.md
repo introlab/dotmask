@@ -112,7 +112,7 @@ Python 3.6.9 (& 2.7), Cuda 10.2, PyTorch, ROS Melodic, RTAB-Map
 
 
 ## Run DOTMask on xtion
-    * Opeeni2 is required to run the camera, install ros-melodic-openni2-launch with apt
+   * Opeeni2 is required to run the camera, install ros-melodic-openni2-launch with apt
 
 1. Start RTABMap-ros
     ```bash

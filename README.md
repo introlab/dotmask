@@ -21,7 +21,7 @@ Python 3.6.9 (& 2.7), Cuda 10.2, PyTorch, ROS Melodic, RTAB-Map
     pip3 install opencv-python pillow pycocotools matplotlib scikit-learn rospkg catkin_pkg
     ```
     
-2. Necesseray tricks to use python3 with ros
+2. Necessary tricks to use python 3 with ros
 
     * This project is based on python3, however ROS has not changed to python3. When the next ROS distribution will be out on python3, this sequence will become obsolete.
 

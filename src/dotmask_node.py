@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 from scipy import ndimage
 import copy
 
-
+'''
 # Yoloact imports
 sys.path.append('../nn/yolact/')
 
@@ -28,6 +28,7 @@ from layers.output_utils import postprocess
 from data import cfg, set_cfg, set_dataset
 import torch
 import torch.backends.cudnn as cudnn
+'''
 
 # ROS
 from sensor_msgs.msg import Image
@@ -106,6 +107,13 @@ class DOTMask():
         self.nn = nn
         if self.nn == 'yolact':
             print("Selected NN: Yolact")
+            # Yoloact imports
+            sys.path.append('../nn/yolact/')
+            from yolact import Yolact
+            from data import cfg, set_cfg, set_dataset
+            import torch
+            import torch.backends.cudnn as cudnn 
+
             set_cfg("yolact_resnet50_config")
             #set_cfg("yolact_resnet50_config")
             cfg.eval_mask_branch = True
@@ -121,6 +129,19 @@ class DOTMask():
 
         elif self.nn == 'mrcnn':
             print("Selected NN: Mask-RCNN")
+             # Keras
+            import keras
+            from keras.models import Model
+            from keras import backend as K
+            K.common.set_image_dim_ordering('tf')
+
+            # Mask-RCNN
+            sys.path.append('../nn/Mask_RCNN/')
+            from mrcnn import config
+            from mrcnn import utils 
+            from mrcnn import model as modellib
+            from inference_config import InferenceConfig
+
             self.config = InferenceConfig()
             self.model = modellib.MaskRCNN(
                 mode="inference", 
@@ -129,6 +150,7 @@ class DOTMask():
 
             # Load weights trained on MS-COCO
             self.model.load_weights("../weights/mask_rcnn_coco.h5", by_name=True)
+        
         else:
             print("no nn defined")
 
@@ -708,9 +730,9 @@ class DOTMask():
                 
                 print_time = time.time()
 
-                print(" NN pred time: ", format(nn_pred_time - nn_start_time, '.3f'),", NN post time: ", format(nn_time - nn_pred_time, '.3f'),", NN time: ", format(nn_time - start_time, '.3f'), ", Kalman time: ", format(kalman_time - nn_time, '.3f'),
-                ", Print time: ", format(print_time - kalman_time, '.3f'), ", Total time: ", format(time.time() - start_time, '.3f'),
-                ", FPS :", format(1/(time.time() - start_time), '.2f'), end="\r")
+                #print(" NN pred time: ", format(nn_pred_time - nn_start_time, '.3f'),", NN post time: ", format(nn_time - nn_pred_time, '.3f'),", NN time: ", format(nn_time - start_time, '.3f'), ", Kalman time: ", format(kalman_time - nn_time, '.3f'),
+                #", Print time: ", format(print_time - kalman_time, '.3f'), ", Total time: ", format(time.time() - start_time, '.3f'),
+                #", FPS :", format(1/(time.time() - start_time), '.2f'), end="\r")
 
     def image_callback(self, msg):
 
@@ -755,7 +777,13 @@ if __name__ == '__main__':
     else:
         print("No input selected")
 
-    if args.nn == "yolact":  
+    if args.nn == "yolact":
+        from utils.augmentations import BaseTransform, FastBaseTransform, Resize
+        
+        from data import COCODetection, get_label_map, MEANS, COLORS
+        from layers.output_utils import postprocess
+        
+        import torch 
         with torch.no_grad():
             dotmask.live_analysis()
     elif args.nn == "mrcnn":

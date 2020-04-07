@@ -61,6 +61,11 @@ Python 3.6.9 (& 2.7), Cuda 10.2, PyTorch, ROS Melodic, RTAB-Map
     cd catkin_ws_py3/src/dotmask/nn
     git clone https://github.com/dbolya/yolact.git
     ```
+      * For YOLACT++ you need to compile DCNv2, this may require elevated permissions
+        ```bash
+        cd catkin_ws_py3/src/dotmask/nn/external/DCNv2
+        python3 setup.py build develop
+        ```
 
     Mask R-CNN: 
     ```bash
@@ -89,11 +94,24 @@ Python 3.6.9 (& 2.7), Cuda 10.2, PyTorch, ROS Melodic, RTAB-Map
     roslaunch dotmask dotmask-tum.launch
     ```
 
-2. Start DOTMask
+2. Start DOTMask 
+    * With YOLACT
     ```bash
     source ~/catkin_ws_py3/devel/setup.bash
     cd ~/catkin_ws_py3/src/dotmask/src
     python3 dotmask_node.py --nn=yolact --input=tum
+    ```
+    * With YOLACT++ 
+    ```bash
+    source ~/catkin_ws_py3/devel/setup.bash
+    cd ~/catkin_ws_py3/src/dotmask/src
+    python3 dotmask_node.py --nn=yolact++ --input=tum
+    ```
+    * With Mask R-CNN 
+    ```bash
+    source ~/catkin_ws_py3/devel/setup.bash
+    cd ~/catkin_ws_py3/src/dotmask/src
+    python3 dotmask_node.py --nn=mrcnn --input=tum
     ```
     
 3. Start a TUM rosbag
@@ -125,6 +143,7 @@ Python 3.6.9 (& 2.7), Cuda 10.2, PyTorch, ROS Melodic, RTAB-Map
     ```
 
 3. Start DOTMask
+    * If you want to use YOLACT++ or Mask-RCNN, change the --nn field for "yolact++" or "mrcnn" respectively
     ```bash
     source ~/catkin_ws_py3/devel/setup.bash
     cd ~/catkin_ws_py3/src/dotmask/src

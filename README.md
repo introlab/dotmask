@@ -142,10 +142,22 @@ Python 3.6.9 (& 2.7), Cuda 10.2, PyTorch, ROS Melodic, RTAB-Map
     roslaunch openni2_launch openni2.launch depth_registration:=true
     ```
 
-3. Start DOTMask
-    * If you want to use YOLACT++ or Mask-RCNN, change the --nn field for "yolact++" or "mrcnn" respectively
+3. Start DOTMask 
+    * With YOLACT
     ```bash
     source ~/catkin_ws_py3/devel/setup.bash
     cd ~/catkin_ws_py3/src/dotmask/src
     python3 dotmask_node.py --nn=yolact --input=xtion
+    ```
+    * With YOLACT++ 
+    ```bash
+    source ~/catkin_ws_py3/devel/setup.bash
+    cd ~/catkin_ws_py3/src/dotmask/src
+    python3 dotmask_node.py --nn=yolact++ --input=xtion
+    ```
+    * With Mask R-CNN 
+    ```bash
+    source ~/catkin_ws_py3/devel/setup.bash
+    cd ~/catkin_ws_py3/src/dotmask/src
+    python3 dotmask_node.py --nn=mrcnn --input=xtion
     ```

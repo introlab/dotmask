@@ -80,7 +80,7 @@ Python 3.6.9 (& 2.7), Cuda 10.2, PyTorch, ROS Melodic, RTAB-Map
     * https://drive.google.com/uc?id=1ZPu1YR2UzGHQD0o1rEqy-j5bmEm3lbyP&export=download
 
     Mask R-CNN:
-    * https://github.com/matterport/Mask_RCNN/releases/download/v2.1/mask_rcnn_balloon.h5 
+    * https://github.com/matterport/Mask_RCNN/releases/download/v1.0/mask_rcnn_coco.h5 
 
 ## Benchmarking on TUM
 

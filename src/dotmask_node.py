@@ -126,7 +126,27 @@ class DOTMask():
             cudnn.fastest = True
             torch.set_default_tensor_type('torch.cuda.FloatTensor')
             self.net = self.net.cuda()
+        elif self.nn == 'yolact++':
+            print("Selected NN: Yolact++")
+            # Yoloact imports
+            sys.path.append('../nn/yolact/')
+            from yolact import Yolact
+            from data import cfg, set_cfg, set_dataset
+            import torch
+            import torch.backends.cudnn as cudnn 
 
+            set_cfg("yolact_plus_resnet50_config")
+            #set_cfg("yolact_resnet50_config")
+            cfg.eval_mask_branch = True
+            cfg.mask_proto_debug = False
+            cfg.rescore_bbox = True
+            self.net = Yolact()
+            self.net.load_weights("../weights/yolact_plus_resnet50_54_800000.pth")
+            #self.net.load_weights("../weights/yolact_resnet50_54_800000.pth")
+            self.net.eval()
+            cudnn.fastest = True
+            torch.set_default_tensor_type('torch.cuda.FloatTensor')
+            self.net = self.net.cuda()
         elif self.nn == 'mrcnn':
             print("Selected NN: Mask-RCNN")
              # Keras
@@ -533,7 +553,7 @@ class DOTMask():
                 
                 nn_start_time = time.time()
                 
-                if self.nn == 'yolact':
+                if self.nn == 'yolact' or self.nn == 'yolact++':
                     frame = torch.from_numpy(current_frame).cuda().float()
                     batch = FastBaseTransform()(frame.unsqueeze(0))
                     preds = self.net(batch.cuda())
@@ -777,7 +797,7 @@ if __name__ == '__main__':
     else:
         print("No input selected")
 
-    if args.nn == "yolact":
+    if args.nn == "yolact" or args.nn == "yolact++":
         from utils.augmentations import BaseTransform, FastBaseTransform, Resize
         
         from data import COCODetection, get_label_map, MEANS, COLORS

@@ -772,7 +772,7 @@ if __name__ == '__main__':
     parse_args()
 
     dotmask = DOTMask(args.nn, args.input)
-    rospy.init_node('ism_node', anonymous=True)
+    rospy.init_node('ism_node_2', anonymous=True)
 
     listener = tf.TransformListener()
 
@@ -787,6 +787,12 @@ if __name__ == '__main__':
         dotmask.tf_camera = '/camera_rgb_optical_frame'
         rospy.Subscriber("/camera/rgb/image_rect_color", Image, dotmask.image_callback)
         rospy.Subscriber("/camera/depth_registered/image_raw", 
+                    Image, dotmask.depth_image_callback)
+    elif args.input=='D435i':
+        print("Running on D435i")
+        dotmask.tf_camera = '/camera_color_frame'
+        rospy.Subscriber("/camera/color/image_raw", Image, dotmask.image_callback)
+        rospy.Subscriber("/camera/depth/image_rect_raw", 
                     Image, dotmask.depth_image_callback)
     elif args.input=='zed':
         print("Running on xamera zed")

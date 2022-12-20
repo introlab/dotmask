@@ -2,6 +2,8 @@
 
 **D**ynamic **O**bject **T**racking and **Mask**ing is a simple and modular visual SLAM pipeline that to improves both localization and mapping in dynamic environments for mobile robotics. 
 
+https://arxiv.org/pdf/2008.00072v1.pdf
+
 ## Requirements
 
 Python 3.6.9 (& 2.7), Cuda 10.2, PyTorch, ROS Melodic, RTAB-Map
